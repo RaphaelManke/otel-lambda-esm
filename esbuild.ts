@@ -2,7 +2,7 @@ import { build } from "esbuild";
 
 build({
     entryPoints: ['instrumentation/instrumentation.mts'],
-    bundle: false,
+    bundle: true,
     minify: false,
     format: 'esm',
     sourcemap: false,
@@ -14,7 +14,9 @@ build({
     target: ['esnext'],
     platform: 'node',
     mainFields: ['module', 'main'],
-    external: [], // Example of excluding dependencies
+    external: [
+        "import-in-the-middle",
+    ], // Example of excluding dependencies
     banner: {
         js: "import { createRequire } from 'module';const require = createRequire(import.meta.url);",
     }
