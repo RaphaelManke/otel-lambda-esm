@@ -1,14 +1,10 @@
-# Welcome to your CDK TypeScript project
+# AWS Lambda function NodeJS with OTEL in ESM
 
-This is a blank project for CDK development with TypeScript.
+This is a reproduction repo with a minimal setup for a NodeJS function instrumented with OpenTelemetry.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+All code is loaded as ESM. 
+
 
 ## Useful commands
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `npx cdk deploy`  deploy this stack to your default AWS account/region
-* `npx cdk diff`    compare deployed stack with current state
-* `npx cdk synth`   emits the synthesized CloudFormation template
+* `npm run deploy`  deploy this stack to your default AWS account/region

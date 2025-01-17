@@ -1,5 +1,5 @@
 {
-  "app": "npx ts-node --prefer-ts-exts bin/otel-lambda-esm.ts",
+  "app": "npx tsx bin/otel-lambda-esm.ts",
   "watch": {
     "include": [
       "**"
