@@ -4,6 +4,17 @@ This is a reproduction repo with a minimal setup for a NodeJS function instrumen
 
 All code is loaded as ESM. 
 
+Depending on the bundeling flag in [esbuild.ts](./esbuild.ts) the instrumentation works or not.
+
+Works
+```ts
+    bundle: false,
+```
+
+Fails
+```
+    bundle: true,
+```
 
 ## Useful commands
 
