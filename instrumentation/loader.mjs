@@ -72,7 +72,16 @@ let registered = false;
 export function registerLoader() {
   if (!registered) {
     register('import-in-the-middle/hook.mjs', import.meta.url, {
-      data: { exclude: ['file:///var/task/instrumentation.mjs', "@opentelemetry/*", "*"] }
+      data: {
+        exclude: [
+        // include: [
+          // 'file:///var/task/instrumentation.mjs', 
+          // "@opentelemetry/*", 
+          // "*" , 
+          /.*/
+          // "file:///var/task/index.mjs"
+        ]
+      }
     });
 
     registered = true;
