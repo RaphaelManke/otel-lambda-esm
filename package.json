@@ -10,7 +10,7 @@
     "test": "jest",
     "cdk": "cdk",
     "build:otel": "tsx esbuild.ts",
-    "deploy": "npm run build:otel && cdk deploy --require-approval never"
+    "deploy": "npm run build:otel && cdk deploy --hotswap-fallback --require-approval never"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
