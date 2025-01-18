@@ -1,8 +1,9 @@
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
 import { BundlingOptions, NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs'
 import { LayerVersion, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 
 export const lambdaBundlingOptions: BundlingOptions = {
   // bundle SDK v3 internally, see https://github.com/aws/aws-cdk/issues/25492
@@ -24,10 +25,17 @@ export class OtelLambdaEsmStack extends Stack {
 
     const layer = LayerVersion.fromLayerVersionArn(this, 'OtelLayer', 'arn:aws:lambda:eu-central-1:184161586896:layer:opentelemetry-nodejs-0_11_0:1');
 
-    const lambda = new NodejsFunction(this, 'OtelLambdaEsm', {
+    const logGroup = new LogGroup(this, 'OtelLambdaEsmLogGroup', {
+      logGroupName: '/aws/lambda/OtelLambdaEsm',
+      removalPolicy: RemovalPolicy.DESTROY,
+      retention: RetentionDays.ONE_WEEK,
+    });
+    const lambda = new NodejsFunction(this, 'OtelLambdaEsmFunction', {
+      functionName: 'OtelLambdaEsm',
       entry: 'lambda/handler-esm.ts',
       memorySize: 1024,
       runtime: Runtime.NODEJS_22_X,
+      logGroup: logGroup,
       layers: [layer],
       bundling: {
         ...lambdaBundlingOptions,
@@ -38,6 +46,7 @@ export class OtelLambdaEsmStack extends Stack {
             return [
               `cp -r ${inputDir}/build/* ${outputDir}`,
               `cp -r ${inputDir}/instrumentation/otel-handler ${outputDir}`,
+              `cp -r ${inputDir}/instrumentation/loader.mjs ${outputDir}`,
             ];
           },
         },
