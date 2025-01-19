@@ -1,0 +1,87 @@
+#!/bin/bash
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+set -euo pipefail
+
+OWN_FILENAME="$(basename $0)"
+LAMBDA_EXTENSION_NAME="$OWN_FILENAME" # (external) extension name has to match the filename
+TMPFILE=/tmp/$OWN_FILENAME
+
+# Function for unified logging format
+# ...existing code...
+
+# Function for unified logging format
+log() {
+    local level="$1"
+    shift
+    local message="$@"
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    local requestId="${_currentRequestId:-undefined}"
+    local formatted_message=$(printf "$message" "$@")
+    local line="${timestamp}\t${requestId}\t${level}\t${formatted_message}"
+    line=$(echo "$line" | tr '\n' '\r')
+    echo -e "$line"
+}
+
+# Graceful Shutdown
+_term() {
+    log "INFO" "Received SIGTERM"
+    # forward SIGTERM to child procs and exit
+    kill -TERM "$PID" 2>/dev/null
+    log "INFO" "Exiting"
+    exit 0
+}
+
+forward_sigterm_and_wait() {
+    trap _term SIGTERM
+    wait "$PID"
+    trap - SIGTERM
+}
+
+# Initialization
+log "INFO" "Initialization"
+# Registration
+# The extension registration also signals to Lambda to start initializing the runtime.
+HEADERS="$(mktemp)"
+log "INFO" "Registering at http://${AWS_LAMBDA_RUNTIME_API}/2020-01-01/extension/register"
+curl -sS -LD "$HEADERS" -XPOST "http://${AWS_LAMBDA_RUNTIME_API}/2020-01-01/extension/register" --header "Lambda-Extension-Name: ${LAMBDA_EXTENSION_NAME}" -d "{ \"events\": [\"INVOKE\", \"SHUTDOWN\"]}" >$TMPFILE
+
+RESPONSE=$(<$TMPFILE)
+HEADINFO=$(<$HEADERS)
+# Extract Extension ID from response headers
+EXTENSION_ID=$(grep -Fi Lambda-Extension-Identifier "$HEADERS" | tr -d '[:space:]' | cut -d: -f2)
+log "INFO" "Registration response: ${RESPONSE} with EXTENSION_ID ${EXTENSION_ID}"
+echo "${EXTENSION_ID}" >/tmp/otel-extension-id.txt
+
+# Event processing
+# Continuous loop to wait for events from Extensions API
+# while true
+# do
+log "INFO" "Waiting for event. Get /next event from http://${AWS_LAMBDA_RUNTIME_API}/2020-01-01/extension/event/next"
+
+# Get an event. The HTTP request will block until one is received
+curl -sS -L -XGET "http://${AWS_LAMBDA_RUNTIME_API}/2020-01-01/extension/event/next" --header "Lambda-Extension-Identifier: ${EXTENSION_ID}" >$TMPFILE &
+PID=$!
+forward_sigterm_and_wait
+
+EVENT_DATA=$(<$TMPFILE)
+if [[ $EVENT_DATA == *"SHUTDOWN"* ]]; then
+    log "INFO" "Received SHUTDOWN event. Exiting."
+    exit 0 # Exit if we receive a SHUTDOWN event
+fi
+
+log "INFO" "Received event: ${EVENT_DATA}"
+#   sleep 1
+#   log "INFO" "PROCESSING/SLEEPING"
+#   sleep 5
+#   log "INFO" "DONE PROCESSING/SLEEPING"
+#   sleep 1
+
+# done
+
+# Wait indefinitely
+while :; do
+    sleep infinity &
+    wait $!
+done

@@ -2,7 +2,7 @@ import { RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
 import { BundlingOptions, NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs'
-import { LayerVersion, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Code, LayerVersion, Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 
 export const lambdaBundlingOptions: BundlingOptions = {
@@ -24,6 +24,9 @@ export class OtelLambdaEsmStack extends Stack {
     super(scope, id, props);
 
     const layer = LayerVersion.fromLayerVersionArn(this, 'OtelLayer', 'arn:aws:lambda:eu-central-1:184161586896:layer:opentelemetry-nodejs-0_11_0:1');
+    const extensionlayer = new LayerVersion(this, 'OtelExtensionLayer', {
+      code: Code.fromAsset('instrumentation/extension-layer'),
+    });
 
     const logGroup = new LogGroup(this, 'OtelLambdaEsmLogGroup', {
       logGroupName: '/aws/lambda/OtelLambdaEsm',
@@ -36,7 +39,8 @@ export class OtelLambdaEsmStack extends Stack {
       memorySize: 1024,
       runtime: Runtime.NODEJS_22_X,
       logGroup: logGroup,
-      layers: [layer],
+      layers: [layer, extensionlayer],
+      tracing: Tracing.ACTIVE,
       bundling: {
         ...lambdaBundlingOptions,
         commandHooks: {

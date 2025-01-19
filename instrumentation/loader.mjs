@@ -73,13 +73,13 @@ export function registerLoader() {
   if (!registered) {
     register('import-in-the-middle/hook.mjs', import.meta.url, {
       data: {
-        exclude: [
-        // include: [
+        // exclude: [
+        include: [
           // 'file:///var/task/instrumentation.mjs', 
           // "@opentelemetry/*", 
           // "*" , 
-          /.*/
-          // "file:///var/task/index.mjs"
+          // /.*/
+          "file:///var/task/index.mjs"
         ]
       }
     });

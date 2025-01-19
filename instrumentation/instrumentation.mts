@@ -1,29 +1,30 @@
 import { diag, DiagConsoleLogger } from '@opentelemetry/api'
 import { getEnv } from '@opentelemetry/core'
 import { registerInstrumentations } from '@opentelemetry/instrumentation'
-import { ConsoleSpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
-import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
-
-import { AwsLambdaInstrumentation } from '@opentelemetry/instrumentation-aws-lambda';
-
+import { BatchSpanProcessor, ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base'
+import { AwsLambdaInstrumentation } from '@opentelemetry/instrumentation-aws-lambda'
+import { responseHook } from './extension-client.mjs'
+import { OtelExtensionTraceProvider } from './OtelExtensionTraceProvider.mjs'
 
 const logLevel = getEnv().OTEL_LOG_LEVEL
 diag.setLogger(new DiagConsoleLogger(), logLevel)
 
+const tracerProvider = new OtelExtensionTraceProvider()
+
 const instrumentations = [
   new AwsLambdaInstrumentation({
     requestHook: () => {
-      console.log('HELLO FROM REQUEST HOOK')
-    },
-    responseHook: () => {
-      console.log('HELLO FROM RESPONSE HOOK')
+      console.log('REQUEST HOOK')
     },
 
-  }),
+    responseHook: async () => {
+      console.log('RESPONSE HOOK')
+      await responseHook(tracerProvider)
+    }
+  })
 ]
 
-const tracerProvider = new NodeTracerProvider()
-tracerProvider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()))
+tracerProvider.addSpanProcessor(new BatchSpanProcessor(new ConsoleSpanExporter()))
 
 registerInstrumentations({
   instrumentations,
